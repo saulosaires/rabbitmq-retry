@@ -1,0 +1,14 @@
+spring:
+  rabbitmq:
+    host: localhost
+    username: admin
+    password: admin
+    port: '5672'
+    listener:
+      simple:
+        default-requeue-rejected: 'false'
+
+rabbitmq:
+  retry:
+    delay-in-ms: 1000
+    count: 3
