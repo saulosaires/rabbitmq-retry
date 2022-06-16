@@ -17,7 +17,7 @@ public class RabbitConfiguration {
     private static final String EXCHANGE_NAME = "retry-exchange";
     public static final String QUEUE = "mainQueue";
     private static final String RETRY_QUEUE = "mainQueue.retry";
-    public static final String UNDELIVERED_QUEUE =  "mainQueue.undelivered";
+    public static final String UNDELIVERED_QUEUE = "mainQueue.undelivered";
     private static final String MAIN_ROUTING_KEY = "Routing_Key";
 
     @Value("${rabbitmq.retry.delay-in-ms}")
@@ -43,8 +43,8 @@ public class RabbitConfiguration {
     }
 
     @Bean
-    DirectExchange exchange() {
-        return new DirectExchange(EXCHANGE_NAME);
+    TopicExchange exchange() {
+        return new TopicExchange(EXCHANGE_NAME);
     }
 
     @Bean
@@ -52,6 +52,7 @@ public class RabbitConfiguration {
         return QueueBuilder.durable(QUEUE)
                 .deadLetterExchange(EXCHANGE_NAME)
                 .deadLetterRoutingKey(RETRY_QUEUE)
+                .quorum()
                 .build();
     }
 
@@ -60,27 +61,30 @@ public class RabbitConfiguration {
         return QueueBuilder.durable(RETRY_QUEUE)
                 .deadLetterExchange(EXCHANGE_NAME)
                 .deadLetterRoutingKey(MAIN_ROUTING_KEY)
-                .ttl(10000)
+                .ttl(retryDelay)
+                .quorum()
                 .build();
     }
 
     @Bean
     Queue undeliveredQueue() {
-        return new Queue(UNDELIVERED_QUEUE);
+        return QueueBuilder.durable(UNDELIVERED_QUEUE)
+                .quorum()
+                .build();
     }
 
     @Bean
-    Binding mainBinding(Queue mainQueue, DirectExchange exchange) {
+    Binding mainBinding(Queue mainQueue, TopicExchange exchange) {
         return BindingBuilder.bind(mainQueue).to(exchange).with(MAIN_ROUTING_KEY);
     }
 
     @Bean
-    Binding retryBinding(Queue retryQueue, DirectExchange exchange){
+    Binding retryBinding(Queue retryQueue, TopicExchange exchange) {
         return BindingBuilder.bind(retryQueue).to(exchange).with(RETRY_QUEUE);
     }
 
     @Bean
-    Binding undeliveredBinding(Queue undeliveredQueue, DirectExchange exchange) {
+    Binding undeliveredBinding(Queue undeliveredQueue, TopicExchange exchange) {
         return BindingBuilder.bind(undeliveredQueue).to(exchange).with(UNDELIVERED_QUEUE);
     }
 
